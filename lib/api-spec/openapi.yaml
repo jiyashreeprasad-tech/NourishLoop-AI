@@ -1,22 +1,28 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NourishLoop AI operations API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: overview
+  - name: forecasts
+  - name: inventory
+  - name: surplus
+  - name: partners
+  - name: logistics
+  - name: sustainability
+  - name: alerts
+  - name: demo
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,613 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /overview:
+    get:
+      operationId: getOverview
+      tags: [overview]
+      summary: Get command center overview
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Overview"
+  /forecasts:
+    get:
+      operationId: getForecasts
+      tags: [forecasts]
+      summary: Get demand forecasts
+      parameters:
+        - $ref: "#/components/parameters/SiteId"
+        - name: days
+          in: query
+          schema: { type: integer, default: 3, minimum: 1, maximum: 14 }
+      responses:
+        "200":
+          description: Forecasts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Forecast" }
+    post:
+      operationId: generateForecast
+      tags: [forecasts]
+      summary: Generate a revised forecast
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForecastInput"
+      responses:
+        "201":
+          description: Forecast generated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Forecast" }
+  /inventory:
+    get:
+      operationId: getInventory
+      tags: [inventory]
+      summary: Get inventory and quality risks
+      parameters:
+        - $ref: "#/components/parameters/SiteId"
+        - name: risk
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Inventory
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/InventoryItem" }
+    post:
+      operationId: createInventory
+      tags: [inventory]
+      summary: Add an inventory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryInput" }
+      responses:
+        "201":
+          description: Inventory item created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryItem" }
+  /inventory/{id}:
+    patch:
+      operationId: updateInventory
+      tags: [inventory]
+      summary: Update inventory item
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryUpdate" }
+      responses:
+        "200":
+          description: Inventory item updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryItem" }
+  /inventory/{id}/quality-scan:
+    post:
+      operationId: scanInventoryQuality
+      tags: [inventory]
+      summary: Run prototype visual quality assessment
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Quality result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QualityScan" }
+  /storage-zones:
+    get:
+      operationId: getStorageZones
+      tags: [inventory]
+      summary: Get storage zone sensor readings
+      responses:
+        "200":
+          description: Storage zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StorageZone" }
+  /storage-zones/{id}/simulate:
+    post:
+      operationId: simulateStorageUpdate
+      tags: [inventory]
+      summary: Simulate a sensor update
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Updated zone
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StorageZone" }
+  /surplus:
+    get:
+      operationId: getSurplus
+      tags: [surplus]
+      summary: Get surplus batches
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Surplus batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SurplusBatch" }
+    post:
+      operationId: createSurplus
+      tags: [surplus]
+      summary: Create surplus listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurplusInput" }
+      responses:
+        "201":
+          description: Surplus created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SurplusBatch" }
+  /surplus/{id}:
+    patch:
+      operationId: updateSurplus
+      tags: [surplus]
+      summary: Update surplus status
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurplusUpdate" }
+      responses:
+        "200":
+          description: Surplus updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SurplusBatch" }
+  /surplus/{id}/matches:
+    get:
+      operationId: getSurplusMatches
+      tags: [surplus, partners]
+      summary: Get explainable partner matches
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Match" }
+  /surplus/{id}/matches/{matchId}/accept:
+    post:
+      operationId: acceptSurplusMatch
+      tags: [surplus, partners]
+      summary: Accept a surplus match
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - name: matchId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Accepted match
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Match" }
+  /partners:
+    get:
+      operationId: getPartners
+      tags: [partners]
+      summary: Get redistribution partners
+      responses:
+        "200":
+          description: Partners
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Partner" }
+  /routes:
+    get:
+      operationId: getRoutes
+      tags: [logistics]
+      summary: Get active logistics routes
+      responses:
+        "200":
+          description: Routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Route" }
+    post:
+      operationId: optimizeRoute
+      tags: [logistics]
+      summary: Optimize a pickup route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RouteInput" }
+      responses:
+        "201":
+          description: Route created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Route" }
+  /sustainability:
+    get:
+      operationId: getSustainability
+      tags: [sustainability]
+      summary: Get impact analytics
+      responses:
+        "200":
+          description: Sustainability metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Sustainability" }
+  /alerts:
+    get:
+      operationId: getAlerts
+      tags: [alerts]
+      summary: Get operational alerts
+      responses:
+        "200":
+          description: Alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Alert" }
+  /alerts/{id}:
+    patch:
+      operationId: updateAlert
+      tags: [alerts]
+      summary: Mark or resolve an alert
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlertUpdate" }
+      responses:
+        "200":
+          description: Alert updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Alert" }
+  /activity:
+    get:
+      operationId: getActivity
+      tags: [overview]
+      summary: Get recent activity
+      responses:
+        "200":
+          description: Activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityEvent" }
+  /demo/reset:
+    post:
+      operationId: resetDemo
+      tags: [demo]
+      summary: Reset demo state
+      responses:
+        "200":
+          description: Reset complete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoResult" }
+  /demo/simulate:
+    post:
+      operationId: simulateDemo
+      tags: [demo]
+      summary: Run a demo simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoInput" }
+      responses:
+        "200":
+          description: Simulation complete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoResult" }
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    SiteId:
+      name: siteId
+      in: query
+      schema: { type: string, default: site-central }
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
+        status: { type: string }
+    Overview:
+      type: object
+      required: [metrics, recommendations, alerts, trends]
+      properties:
+        metrics:
+          type: object
+          additionalProperties: { type: number }
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/Recommendation" }
+        alerts:
+          type: array
+          items: { $ref: "#/components/schemas/Alert" }
+        trends:
+          type: array
+          items: { $ref: "#/components/schemas/TrendPoint" }
+    Recommendation:
+      type: object
+      required: [id, title, description, impact, priority]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        impact: { type: string }
+        priority: { type: string }
+        actionLabel: { type: string }
+    TrendPoint:
+      type: object
+      required: [label, planned, actual, waste]
+      properties:
+        label: { type: string }
+        planned: { type: number }
+        actual: { type: number }
+        waste: { type: number }
+    Forecast:
+      type: object
+      required: [id, forecastDate, mealType, predictedMeals, recommendedProduction, lowerBound, upperBound, confidence, explanation]
+      properties:
+        id: { type: string }
+        forecastDate: { type: string }
+        mealType: { type: string }
+        predictedMeals: { type: number }
+        recommendedProduction: { type: number }
+        lowerBound: { type: number }
+        upperBound: { type: number }
+        confidence: { type: number }
+        explanation: { type: string }
+    ForecastInput:
+      type: object
+      required: [forecastDate, attendance]
+      properties:
+        forecastDate: { type: string }
+        attendance: { type: number }
+    InventoryItem:
+      type: object
+      required: [id, name, category, quantity, unit, expiresAt, storageZone, temperature, risk, freshness, status, servings]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        quantity: { type: number }
+        unit: { type: string }
+        expiresAt: { type: string }
+        storageZone: { type: string }
+        temperature: { type: number }
+        risk: { type: number }
+        freshness: { type: number }
+        status: { type: string }
+        servings: { type: number }
+        batch: { type: string }
+        allergens:
+          type: array
+          items: { type: string }
+    InventoryInput:
+      type: object
+      required: [name, quantity, unit, expiresAt]
+      properties:
+        name: { type: string }
+        quantity: { type: number }
+        unit: { type: string }
+        expiresAt: { type: string }
+    InventoryUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        temperature: { type: number }
+    QualityScan:
+      type: object
+      required: [freshness, risk, indicators, recommendation]
+      properties:
+        freshness: { type: number }
+        risk: { type: number }
+        indicators:
+          type: array
+          items: { type: string }
+        recommendation: { type: string }
+    StorageZone:
+      type: object
+      required: [id, name, temperature, humidity, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        temperature: { type: number }
+        humidity: { type: number }
+        status: { type: string }
+        history:
+          type: array
+          items: { type: number }
+    SurplusBatch:
+      type: object
+      required: [id, foodName, servings, preparedAt, bestBefore, status, dietaryTags, qualityStatus, location]
+      properties:
+        id: { type: string }
+        foodName: { type: string }
+        servings: { type: number }
+        preparedAt: { type: string }
+        bestBefore: { type: string }
+        status: { type: string }
+        dietaryTags:
+          type: array
+          items: { type: string }
+        qualityStatus: { type: string }
+        location: { type: string }
+        valueInr: { type: number }
+        progress: { type: number }
+    SurplusInput:
+      type: object
+      required: [foodName, servings, bestBefore]
+      properties:
+        foodName: { type: string }
+        servings: { type: number }
+        bestBefore: { type: string }
+        dietaryTags:
+          type: array
+          items: { type: string }
+    SurplusUpdate:
+      type: object
+      properties:
+        status: { type: string }
+    Partner:
+      type: object
+      required: [id, name, type, distanceKm, capacity, reliability, verified]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        distanceKm: { type: number }
+        capacity: { type: number }
+        reliability: { type: number }
+        verified: { type: boolean }
+        tags:
+          type: array
+          items: { type: string }
+    Match:
+      type: object
+      required: [id, partnerId, partnerName, score, distanceKm, pickupMinutes, reason, status]
+      properties:
+        id: { type: string }
+        partnerId: { type: string }
+        partnerName: { type: string }
+        score: { type: number }
+        distanceKm: { type: number }
+        pickupMinutes: { type: number }
+        reason: { type: string }
+        status: { type: string }
+    Route:
+      type: object
+      required: [id, title, status, distanceKm, durationMinutes, emissionsKg, stops]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string }
+        distanceKm: { type: number }
+        durationMinutes: { type: number }
+        emissionsKg: { type: number }
+        stops:
+          type: array
+          items: { $ref: "#/components/schemas/RouteStop" }
+    RouteStop:
+      type: object
+      required: [name, type, eta]
+      properties:
+        name: { type: string }
+        type: { type: string }
+        eta: { type: string }
+    RouteInput:
+      type: object
+      required: [surplusId, partnerId]
+      properties:
+        surplusId: { type: string }
+        partnerId: { type: string }
+    Sustainability:
+      type: object
+      required: [mealsRedistributed, wasteAvoidedKg, carbonSavedKg, waterSavedLitres, moneySavedInr, successRate, daily]
+      properties:
+        mealsRedistributed: { type: number }
+        wasteAvoidedKg: { type: number }
+        carbonSavedKg: { type: number }
+        waterSavedLitres: { type: number }
+        moneySavedInr: { type: number }
+        successRate: { type: number }
+        daily:
+          type: array
+          items: { $ref: "#/components/schemas/ImpactPoint" }
+    ImpactPoint:
+      type: object
+      required: [label, meals, carbon, waste]
+      properties:
+        label: { type: string }
+        meals: { type: number }
+        carbon: { type: number }
+        waste: { type: number }
+    Alert:
+      type: object
+      required: [id, title, description, severity, status, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        severity: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+        relatedId: { type: ["string", "null"] }
+    AlertUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    ActivityEvent:
+      type: object
+      required: [id, title, description, time, type]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        time: { type: string }
+        type: { type: string }
+    DemoInput:
+      type: object
+      required: [action]
+      properties:
+        action:
           type: string
-      required:
-        - status
-
+          enum: [temperature_spike, new_surplus, accept_match, complete_delivery, advance_time]
+    DemoResult:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }

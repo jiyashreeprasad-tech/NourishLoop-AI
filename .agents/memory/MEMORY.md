@@ -1,0 +1,1 @@
+- [Generated client DOM iterable support](generated-client-dom-iterable.md) — Orval's browser client needs `dom.iterable` for Headers.entries.

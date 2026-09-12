@@ -1,6 +1,6 @@
-# [Project name]
+# NourishLoop AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An AI-assisted command center for reducing institutional food waste and coordinating safe surplus redistribution.
 
 ## Run & Operate
 
@@ -22,15 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/nourishloop-ai/src/` — React web app, routes, shared UI, and theme.
+- `artifacts/api-server/src/routes/nourishloop.ts` — seeded in-memory demo API and simulation actions.
+- `lib/api-spec/openapi.yaml` — source of truth for generated frontend API hooks and Zod contracts.
+- `lib/api-client-react/src/generated/` — generated React Query client.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first prototype uses a seeded in-memory API so the hackathon demo works without external credentials or setup.
+- All user-facing API contracts are defined in OpenAPI first and generated into shared hooks and schemas.
+- Forecasting, quality risk, partner matching, and impact numbers are explainable deterministic algorithms rather than opaque AI calls.
+- The web app is rooted at `/` so the command center opens directly in preview and production.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Operations overview with demand, waste, risk, activity, and recommendations.
+- Demand forecasting, inventory quality monitoring, surplus matching, route planning, processing-line monitoring, sustainability analytics, alerts, and demo controls.
+- The primary demo flow supports creating or accepting surplus, planning a route, completing delivery, and seeing impact metrics update.
 
 ## User preferences
 

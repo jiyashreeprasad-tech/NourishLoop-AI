@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NourishLoop AI"
+description = "An AI-powered food waste reduction and surplus redistribution command center for institutional kitchens, processing units, and community partners."
+version = "1.0.0"
+id = "artifacts/nourishloop-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23114
+
+[services.development]
+run = "pnpm --filter @workspace/nourishloop-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nourishloop-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/nourishloop-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23114"
+BASE_PATH = "/"
